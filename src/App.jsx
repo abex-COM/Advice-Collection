@@ -35,7 +35,6 @@ function AdvicesList({ slip, query, onHandleAdd, selectedId, index }) {
 
 export default function App() {
   const [advices, setAdvices] = useState([]);
-  // const [id] = advices.id;
   const [query, setQuery] = useState("never");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -65,43 +64,43 @@ export default function App() {
     localStorage.setItem("advice", JSON.stringify(favorite));
   }, [favorite]);
 
- 
   useEffect(() => {
-    function setTitele() {
-      // document.title = `Advice Collection\\${advices.id}`;
-      console.log(advices)
-      // console.log(id1)
-    }
-    setTitele();
-  }, [advices]);
-  useEffect(() => {
+    const controller = new AbortController();
     async function fetchData() {
       try {
         setLoading(true);
         const resp = await fetch(
-          `https://api.adviceslip.com/advice/search/${query}`
+          `https://api.adviceslip.com/advice/search/${query}`,
+          { signal: controller.signal }
         );
         if (!resp.ok) throw new Error("not found");
         const data = await resp.json();
         const limitedResults = data.slips ? data.slips.slice(0, 100) : [];
         const queryLowerCase = query.toLowerCase();
-
+  
         const hasMatched = limitedResults.some((slip) =>
           slip.advice.toLowerCase().includes(queryLowerCase)
         );
         setIsEqual(hasMatched);
-        setLoading(false);
         setAdvices(limitedResults);
       } catch (err) {
-        setError(err.message || "An error occurred");
+        if (err.name !== "AbortError") {
+          setError(err.message || "An error occurred");
+        }
+      } finally {
         setLoading(false);
       }
     }
-
+  if(query.length>3)
     if (query.trim()) {
       fetchData();
     }
+  return()=>{
+    controller.abort()
+  }
+    
   }, [query]);
+  
 
   return (
     <div className="container">
